@@ -1,0 +1,36 @@
+---
+- name: enable dns service
+  hosts: all
+  tasks:
+    - name: create nameservers entries
+      lineinfile:
+        path: /etc/systemd/resolved.conf
+        regexp: '^#DNS='
+        line: 'DNS=192.168.122.1 8.8.8.8'
+    - name: erase resolv.conf file
+      file:
+        state: absent
+        path: "/etc/resolv.conf"
+    - name: Create symbolic link
+      file:
+        src: "/run/systemd/resolve/resolv.conf"
+        dest: "/etc/resolv.conf"
+        state: link
+    - name: enable systemd-resolved.service
+      systemd:
+        name: systemd-resolved.service
+        enabled: yes
+    - name: start systemd-resolved.service
+      systemd:
+        name: systemd-resolved.service
+        state: started
+    - name: restart systemd-resolved.service
+      systemd:
+        name: systemd-resolved.service
+        state: started
+    - name: Set authorized key taken from file
+      authorized_key:
+        user: user
+        state: present
+        key: "{{ lookup('file', lookup('env','HOME') + '/.ssh/id_rsa.pub') }}"
+
