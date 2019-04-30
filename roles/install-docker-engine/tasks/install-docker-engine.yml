@@ -1,0 +1,79 @@
+---
+### add distribution test
+- name: "ensure old versions of Docker are not installed"
+  package:
+    name: '{{ item }}'
+    state: absent
+  loop:
+    - docker
+    - docker-engine
+- name: "ensure dependencies are installed"
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+    state: present
+  when: ansible_distribution == 'Ubuntu'
+- name: Install a list of packages
+  yum:
+    name:
+      - yum-utils
+      - device-mapper-persistent-data
+      - lvm2
+    state: present
+  when: ansible_distribution == 'CentOS'
+- name: "add Docker apt key"
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    id: 9DC858229FC7DD38854AE2D88D81803C0EBFCD88
+    state: present
+  ignore_errors: True
+  when: ansible_distribution == 'Ubuntu'
+- name: "add Docker repository"
+  apt_repository:
+    repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic {{ docker_apt_release_channel }}"
+    state: present
+    update_cache: yes
+  when: ansible_distribution == 'Ubuntu'
+- name: Add Docker repo
+  get_url:
+    url: https://download.docker.com/linux/centos/docker-ce.repo
+    dest: /etc/yum.repos.d/docer-ce.repo
+  when: ansible_distribution == 'CentOS'
+- name: Enable Docker Edge repo
+  ini_file:
+    dest: /etc/yum.repos.d/docer-ce.repo
+    section: 'docker-ce-edge'
+    option: enabled
+    value: 1
+  when: ansible_distribution == 'CentOS'
+- name: Disable gpgcheck
+  ini_file:
+    dest: /etc/yum.repos.d/docer-ce.repo
+    section: 'docker-ce-edge'
+    option: gpgcheck
+    value: 0
+  when: ansible_distribution == 'CentOS'
+- name: "install Docker"
+  package:
+    name: "docker-ce"
+    state: present
+- name: "install docker-ce-cli containerd.io"
+  yum:
+    name:
+      - docker-ce-cli
+      - containerd.io
+    state: present
+  when: ansible_distribution == 'CentOS'
+- name: "ensure docker users are added to the docker group"
+  user:
+    name: "{{ item }}"
+    groups: docker
+    append: yes
+  loop: "{{ docker_users }}"
+- name: "ensure Docker is started and enabled at boot"
+  service:
+    name: docker
+    state: started
+    enabled: yes
+#  notify: restart docker and gns3

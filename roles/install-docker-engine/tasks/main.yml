@@ -1,0 +1,4 @@
+- import_tasks: install-docker-engine.yml
+  tags: [docker]
+  vars:
+    docker_apt_release_channel: stable # stable edge
