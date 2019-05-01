@@ -1,0 +1,14 @@
+---
+- name: "Join Swarm Cluster"
+  tags: [join]
+  hosts: all
+  strategy: free
+  gather_facts: true
+  vars:
+    swarm_token: "xxxxxxx"
+    master: "node1" # Ip or name
+  tasks:
+    - name: Set authorized key taken from file
+      shell: "docker swarm join --token {{ swarm_token }} {{ master }}:2377"
+      args:
+        executable: /bin/bash
