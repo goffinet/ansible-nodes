@@ -1,36 +1,4 @@
 ---
-- name: "enable dns service"
-  tags: [dns]
-  hosts: all
-  strategy: free
-  gather_facts: true
-  tasks:
-    - name: create nameservers entries
-      lineinfile:
-        path: /etc/systemd/resolved.conf
-        regexp: '^#DNS='
-        line: 'DNS=192.168.122.1 8.8.8.8'
-    - name: erase resolv.conf file
-      file:
-        state: absent
-        path: "/etc/resolv.conf"
-    - name: Create symbolic link
-      file:
-        src: "/run/systemd/resolve/resolv.conf"
-        dest: "/etc/resolv.conf"
-        state: link
-    - name: enable systemd-resolved.service
-      systemd:
-        name: systemd-resolved.service
-        enabled: yes
-    - name: start systemd-resolved.service
-      systemd:
-        name: systemd-resolved.service
-        state: started
-    - name: restart systemd-resolved.service
-      systemd:
-        name: systemd-resolved.service
-        state: started
 - name: "push your private key"
   tags: [ssh]
   hosts: all
@@ -42,7 +10,33 @@
         user: user
         state: present
         key: "{{ lookup('file', lookup('env','HOME') + '/.ssh/id_rsa.pub') }}"
-- name: "install docker engine and docker compose"
+- name: "Configure the user for sudo no password"
+  tags: [sudo]
+  hosts: all
+  strategy: free
+  gather_facts: true
+  tasks:
+    - name: "Ensure dependencies are installed"
+      package:
+        name:
+          - sudo
+        state: present
+    - name: "Make sure we have a wheel group"
+      group:
+        name: wheel
+        state: present
+    - name: "Allow wheel group to have passwordless sudo"
+      lineinfile:
+        dest: /etc/sudoers
+        state: present
+        regexp: '^%wheel'
+        line: '%wheel ALL=(ALL) NOPASSWD: ALL'
+        validate: 'visudo -cf %s'
+    - name: "Make sure we have a user group"
+      group:
+        name: user
+        state: present
+- name: "Install docker engine and docker compose"
   tags: [docker]
   hosts: all
   strategy: free

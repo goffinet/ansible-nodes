@@ -1,5 +1,4 @@
 ---
-### add distribution test
 - name: "ensure old versions of Docker are not installed"
   package:
     name: '{{ item }}'
